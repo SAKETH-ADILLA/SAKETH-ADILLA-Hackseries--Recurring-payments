@@ -1,0 +1,43 @@
+from pyteal import *
+
+def recurring_payment_contract(receiver: Addr, amount: int, interval: int):
+
+    last_payment_key = Bytes("last_payment")  # Global state key
+
+    program = Seq([
+        Assert(Global.group_size() == Int(1)),  # Only single transaction
+
+        # Ensure it's a Payment Transaction to the correct receiver and amount
+        Assert(
+            And(
+                Txn.type_enum() == TxnType.Payment,
+                Txn.receiver() == receiver,
+                Txn.amount() == Int(amount),
+            )
+        ),
+
+        # Check current time vs last payment
+        If(App.globalGet(last_payment_key) == Int(0)).Then(
+            App.globalPut(last_payment_key, Global.latest_timestamp())
+        ).Else(
+            Seq([
+                Assert(Global.latest_timestamp() >= App.globalGet(last_payment_key) + Int(interval)),
+                App.globalPut(last_payment_key, Global.latest_timestamp())
+            ])
+        ),
+        Approve()
+    ])
+    return program
+
+if __name__ == "__main__":
+    import os
+    with open("recurring_payment_approval.teal", "w") as f:
+        compiled = compileTeal(
+            recurring_payment_contract(
+                Addr("RECEIVER_ADDRESS_HERE"),  # Replace this
+                1000000,                        # Amount in microAlgos (1 Algo)
+                604800                          # 1 week interval in seconds
+            ),
+            mode=Mode.Application
+        )
+        f.write(compiled)
