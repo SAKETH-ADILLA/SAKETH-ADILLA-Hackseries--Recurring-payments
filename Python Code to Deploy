@@ -1,0 +1,35 @@
+from algosdk.v2client import algod
+from algosdk import account, transaction
+from algosdk.future import transaction as future_txn
+from algosdk.logic import get_application_address
+from algosdk.atomic_transaction_composer import *
+import base64
+
+algod_address = "https://testnet-api.algonode.cloud"
+algod_token = ""
+client = algod.AlgodClient(algod_token, algod_address)
+
+creator_mnemonic = "YOUR MNEMONIC HERE"
+receiver = "RECEIVER_ADDRESS_HERE"
+private_key = mnemonic.to_private_key(creator_mnemonic)
+sender = account.address_from_private_key(private_key)
+with open("recurring_payment_approval.teal") as f:
+    approval_source = f.read()
+
+approval_result = client.compile(approval_source)
+approval_program = base64.b64decode(approval_result['result'])
+params = client.suggested_params()
+
+txn = transaction.ApplicationCreateTxn(
+    sender,
+    params,
+    on_complete=transaction.OnComplete.NoOpOC.real,
+    approval_program=approval_program,
+    clear_program=b"",  # Minimal clear state
+    global_schema=transaction.StateSchema(1, 0),  # 1 int, 0 bytes
+    local_schema=transaction.StateSchema(0, 0)
+)
+
+signed_txn = txn.sign(private_key)
+tx_id = client.send_transaction(signed_txn)
+print("Transaction ID:", tx_id)
