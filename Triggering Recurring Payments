@@ -1,0 +1,9 @@
+payment_txn = transaction.PaymentTxn(
+    sender=sender,
+    sp=client.suggested_params(),
+    receiver=receiver,
+    amt=1000000  # microAlgos
+)
+
+signed_payment = payment_txn.sign(private_key)
+client.send_transaction(signed_payment)
