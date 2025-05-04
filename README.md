@@ -14,6 +14,7 @@ Easy to extend for blockchain integration
 
 Clean and modular structure
 
-✨ Author
+✨ Author and
 Developed by Saketh Adilla
+
 Feel free to connect and collaborate!
